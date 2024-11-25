@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import DeckGrid from './components/DeckGrid';
 import DeckView from './components/DeckView';
@@ -6,9 +6,12 @@ import CommanderModal from './components/CommanderModal';
 import { guildCombos, shardCombos, nephilimCombos, type ColorCombo } from './data/colorCombos';
 import type { Deck, Card } from './types';
 
+import './App.css';
+import { IDeck } from './models/IDeck.ts';
+import { saveDeckToStorage, loadDeckFromStorage } from './utils/localStorage.ts';
+
 function App() {
   const [selectedCombo, setSelectedCombo] = useState(guildCombos[0].nickname);
-  const [decks, setDecks] = useState<Deck[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [isCommanderModalOpen, setIsCommanderModalOpen] = useState(false);
 
@@ -32,6 +35,32 @@ function App() {
     setIsCommanderModalOpen(false);
   };
 
+  const [currentView, setCurrentView] = useState('DeckGrid'); // Add state for view
+  const [editingDeck, setEditingDeck] = useHashParam<IDeck | undefined>('deck', undefined);
+  const [decks, setDecks] = useState<IDeck[]>(loadDeckFromStorage());
+
+  useEffect(() => {
+    saveDeckToStorage(decks);
+  }, [decks]);
+
+  const handleDeckSave = (deck: IDeck) => {
+    if (editingDeck) {
+      setDecks(decks.map((d) => (d.id === deck.id ? deck : d)));
+    } else {
+      setDecks([...decks, deck]);
+    }
+    setEditingDeck(deck);
+    setCurrentView('DeckView'); // Switch to DeckView after saving
+  };
+
+  const handleGoBack = () => {
+    setCurrentView('DeckGrid'); // Function to go back to DeckGrid
+  };
+
+  const handleNewDeck = () => {
+    setEditingDeck(undefined);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar selectedCombo={selectedCombo} onSelectCombo={setSelectedCombo} />
@@ -41,8 +70,8 @@ function App() {
           <DeckView deck={selectedDeck} />
         ) : (
           <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-3xl font-bold">{selectedCombo} Decks</h1>
+            <div className="flex justify-between items-center mb-6 bg-red">
+              <h1 className="text-3xl font-bold bg-red">{selectedCombo} Decks</h1>
             </div>
 
             <DeckGrid
@@ -73,3 +102,7 @@ function App() {
 }
 
 export default App;
+
+function useHashParam<T>(arg0: string, undefined: undefined): [any, any] {
+  throw new Error('Function not implemented.');
+}
